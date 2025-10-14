@@ -1,0 +1,19 @@
+# Database Configuration (Your Real Supabase Project)
+SUPABASE_DATABASE_URL=postgresql://postgres:your-password@db.your-project-ref.supabase.co:5432/postgres
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_ANON_KEY=your-anon-key-here
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+
+# Authentication (Google OAuth) - You need to set these up
+AUTH_SECRET=your-auth-secret-here
+GOOGLE_CLIENT_ID=your-google-client-id-here
+GOOGLE_CLIENT_SECRET=your-google-client-secret-here
+
+# AI Services (Gemini) - You need to get this from Google AI Studio
+GEMINI_API_KEY=your-gemini-api-key-here
+
+# Email Services (Resend) - You need to get this from Resend
+RESEND_API_KEY=your-resend-api-key-here
+
+# Twitter API (Optional) - For lead monitoring features
+TWITTER_BEARER_TOKEN=your-twitter-bearer-token-here
