@@ -1,5 +1,4 @@
-import { db } from "@/db"
-import { customers } from "@/db/schema"
+import { db } from "@/db/supabase-direct"
 import {
   Table,
   TableBody,
@@ -17,15 +16,15 @@ export const revalidate = 0
 
 async function getCustomers() {
   noStore();
-  const data = await db.select().from(customers).execute()
+  const data = await db.getCustomers()
   return data
 }
 
-function extractPurchaseCount(purchaseHistory: string | null): number {
-  if (!purchaseHistory) return 0
+function extractPurchaseCount(purchase_history: string | null): number {
+  if (!purchase_history) return 0
   
   // Extract the first number from the string
-  const match = purchaseHistory.match(/\d+/)
+  const match = purchase_history.match(/\d+/)
   if (match) {
     return Number(match[0])
   }
@@ -38,15 +37,15 @@ export default async function CustomersPage() {
   // Debug: Log all customers and their purchase histories
   customerData.forEach(customer => {
     console.log(`Customer ${customer.name}:`, {
-      purchaseHistory: customer.purchaseHistory,
-      extracted: extractPurchaseCount(customer.purchaseHistory)
+      purchase_history: customer.purchase_history,
+      extracted: extractPurchaseCount(customer.purchase_history)
     })
   })
 
   // Find customer with most purchases
   const mostValuableCustomer = customerData.reduce((max, current) => {
-    const currentValue = extractPurchaseCount(current.purchaseHistory)
-    const maxValue = extractPurchaseCount(max.purchaseHistory)
+    const currentValue = extractPurchaseCount(current.purchase_history)
+    const maxValue = extractPurchaseCount(max.purchase_history)
 
     console.log('Comparing:', {
       current: current.name,
@@ -61,7 +60,7 @@ export default async function CustomersPage() {
   // Calculate purchase counts by state
   const stateStats = customerData.reduce((acc: { [key: string]: number }, customer) => {
     const state = customer.state || 'Unknown'
-    const purchases = extractPurchaseCount(customer.purchaseHistory)
+    const purchases = extractPurchaseCount(customer.purchase_history)
     acc[state] = (acc[state] || 0) + purchases
     return acc
   }, {})
@@ -71,7 +70,7 @@ export default async function CustomersPage() {
     .sort(([, a], [, b]) => b - a)
     .slice(0, 3)
 
-  const purchaseCount = extractPurchaseCount(mostValuableCustomer?.purchaseHistory)
+  const purchaseCount = extractPurchaseCount(mostValuableCustomer?.purchase_history)
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -151,7 +150,7 @@ export default async function CustomersPage() {
                   <TableCell>{customer.email}</TableCell>
                   <TableCell>{`${customer.city}, ${customer.state}`}</TableCell>
                   <TableCell>{customer.phone}</TableCell>
-                  <TableCell>{customer.purchaseHistory}</TableCell>
+                  <TableCell>{customer.purchase_history}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

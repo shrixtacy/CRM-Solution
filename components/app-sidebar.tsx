@@ -1,4 +1,4 @@
-import { BarChart, Users, Inbox, MessageSquare, User, Link, Briefcase } from "lucide-react"
+import { BarChart, Users, Inbox, MessageSquare, User, Link, Briefcase, UserPlus, ClipboardList, Bell } from "lucide-react"
 import { signOut } from "@/auth"
 
 import {
@@ -60,6 +60,24 @@ const items = [
   }
 ]
 
+const leadsItems = [
+  {
+    title: "Lead Tracker",
+    url: "/leads/tracker",
+    icon: UserPlus,
+  },
+  {
+    title: "Lead Pipeline & Checklist",
+    url: "/leads/pipeline",
+    icon: ClipboardList,
+  },
+  {
+    title: "Follow-up Reminders",
+    url: "/leads/reminders",
+    icon: Bell,
+  }
+]
+
 function SignOutButton() {
   async function handleSignOut() {
     'use server'
@@ -82,6 +100,24 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <a href={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        
+        <SidebarGroup>
+          <SidebarGroupLabel>Leads & Onboarding System</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {leadsItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <a href={item.url}>

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parse } from 'csv-parse/sync'
-import { db } from '@/db'
-import { customers } from '@/db/schema'
+import { db } from '@/db/supabase-direct'
 import { v4 as uuidv4 } from 'uuid'
 
 export async function POST(request: NextRequest) {
@@ -34,56 +33,44 @@ export async function POST(request: NextRequest) {
           phone: (record.Phone || record.phone || '') as string,
           city: (record.City || record.city || '') as string,
           state: (record.State || record.state || '') as string,
-          purchaseHistory: (record.PurchaseHistory || record.purchaseHistory || '') as string,
+          purchase_history: (record.PurchaseHistory || record.purchaseHistory || '') as string,
           age: parseInt(record.Age || record.age || '0'),
-          businessExpenses: parseInt(record.BusinessExpenses || record.businessExpenses || '0'),
-          businessGrowthRate: parseFloat(record.BusinessGrowthRate || record.businessGrowthRate || '0'),
-          customerSatisfactionScore: parseInt(record.CustomerSatisfactionScore || record.customerSatisfactionScore || '0'),
-          loyaltyPoints: parseInt(record.LoyaltyPoints || record.loyaltyPoints || '0'),
-          averageOrderValue: parseInt(record.AverageOrderValue || record.averageOrderValue || '0'),
-          createdAt: new Date(),
-          updatedAt: new Date()
+          business_expenses: parseInt(record.BusinessExpenses || record.businessExpenses || '0'),
+          business_growth_rate: parseFloat(record.BusinessGrowthRate || record.businessGrowthRate || '0'),
+          customer_satisfaction_score: parseInt(record.CustomerSatisfactionScore || record.customerSatisfactionScore || '0'),
+          loyalty_points: parseInt(record.LoyaltyPoints || record.loyaltyPoints || '0'),
+          average_order_value: parseInt(record.AverageOrderValue || record.averageOrderValue || '0'),
+          created_at: new Date(),
+          updated_at: new Date()
         }
 
+        // Handle missing or invalid data more gracefully
         const customerData = {
           ...rawCustomerData,
-          businessExpenses: Number(rawCustomerData.businessExpenses) || 0,
-          businessGrowthRate: Number(rawCustomerData.businessGrowthRate) || 0,
-          customerSatisfactionScore: Number(rawCustomerData.customerSatisfactionScore) || 0,
-          loyaltyPoints: Number(rawCustomerData.loyaltyPoints) || 0,
-          averageOrderValue: Number(rawCustomerData.averageOrderValue) || 0,
-          age: Number(rawCustomerData.age) || 0
+          business_expenses: isNaN(Number(rawCustomerData.business_expenses)) ? 0 : Number(rawCustomerData.business_expenses),
+          business_growth_rate: isNaN(Number(rawCustomerData.business_growth_rate)) ? 0 : Number(rawCustomerData.business_growth_rate),
+          customer_satisfaction_score: isNaN(Number(rawCustomerData.customer_satisfaction_score)) ? 5 : Number(rawCustomerData.customer_satisfaction_score),
+          loyalty_points: isNaN(Number(rawCustomerData.loyalty_points)) ? 0 : Number(rawCustomerData.loyalty_points),
+          average_order_value: isNaN(Number(rawCustomerData.average_order_value)) ? 0 : Number(rawCustomerData.average_order_value),
+          age: isNaN(Number(rawCustomerData.age)) ? 25 : Number(rawCustomerData.age)
         };
-        if (!customerData.businessExpenses && 
-            !customerData.businessGrowthRate && 
-            !customerData.customerSatisfactionScore) {
-          throw new Error('Invalid numerical values in CSV');
+        // More flexible validation - allow records with some missing numerical values
+        if (customerData.business_expenses < 0 || 
+            customerData.business_growth_rate < 0 || 
+            customerData.customer_satisfaction_score < 0 ||
+            customerData.loyalty_points < 0 ||
+            customerData.average_order_value < 0 ||
+            customerData.age < 0) {
+          throw new Error('Invalid numerical values in CSV - negative values not allowed');
         }
 
-        await db.insert(customers).values(customerData)
-          .onConflictDoUpdate({
-            target: [customers.email],
-            set: {
-              ...(customerData.name && { name: customerData.name }),
-              ...(customerData.gender && { gender: customerData.gender }),
-              ...(customerData.phone && { phone: customerData.phone }),
-              ...(customerData.city && { city: customerData.city }),
-              ...(customerData.state && { state: customerData.state }),
-              ...(customerData.purchaseHistory && { purchaseHistory: customerData.purchaseHistory }),
-              ...(customerData.age && { age: customerData.age }),
-              ...(customerData.businessExpenses && { businessExpenses: customerData.businessExpenses }),
-              ...(customerData.businessGrowthRate && { businessGrowthRate: customerData.businessGrowthRate }),
-              ...(customerData.customerSatisfactionScore && { customerSatisfactionScore: customerData.customerSatisfactionScore }),
-              ...(customerData.loyaltyPoints && { loyaltyPoints: customerData.loyaltyPoints }),
-              ...(customerData.averageOrderValue && { averageOrderValue: customerData.averageOrderValue }),
-              updatedAt: new Date()
-            }
-          })
+        await db.upsertCustomer(customerData)
       } catch (dbError) {
         console.error('Database error:', dbError)
         return NextResponse.json({ 
-          error: 'Database error occurred',
-          details: dbError 
+          error: 'Failed to process CSV record',
+          details: dbError instanceof Error ? dbError.message : 'Unknown error',
+          record: record
         }, { status: 500 })
       }
     }

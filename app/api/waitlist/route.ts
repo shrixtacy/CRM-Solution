@@ -1,7 +1,15 @@
-import { db } from "@/db/index";
-import { waitlistUsers } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from "next/server";
+
+const supabaseUrl = process.env.SUPABASE_URL || 'https://cekhahbluzicilrtkyvz.supabase.co'
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNla2hhaGJsdXppY2lscnRreXZ6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDI3NDk5MSwiZXhwIjoyMDc1ODUwOTkxfQ.Bh_Z1r5iFZICmSfnWYwYVyIFniebejg12oy_7HIQ1gE'
+
+const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+})
 
 // Email validation regex
 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -16,16 +24,29 @@ export async function POST(request: Request) {
     }
 
     // Check if the email already exists in the waitlist
-    const existingUser = await db.select().from(waitlistUsers).where(eq(waitlistUsers.email, email)).execute();
+    const { data: existingUser, error: checkError } = await supabase
+      .from('waitlist_users')
+      .select('*')
+      .eq('email', email);
 
-    if (existingUser.length > 0) {
+    if (checkError) {
+      console.error('Error checking existing user:', checkError);
+      return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+    }
+
+    if (existingUser && existingUser.length > 0) {
       return NextResponse.json({ message: "Email already on the waitlist" }, { status: 400 });
     }
 
     // Insert the new email into the waitlist table
-    await db.insert(waitlistUsers).values({
-      email,
-    }).execute();
+    const { error: insertError } = await supabase
+      .from('waitlist_users')
+      .insert({ email });
+
+    if (insertError) {
+      console.error('Error inserting user:', insertError);
+      return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+    }
 
     return NextResponse.json({ message: "Email added to waitlist successfully" }, { status: 201 });
   } catch (error) {

@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Groq } from 'groq-sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-if (!process.env.GROQ_API_KEY) {
-  throw new Error('GROQ_API_KEY is not defined in environment variables');
+if (!process.env.GEMINI_API_KEY) {
+  throw new Error('GEMINI_API_KEY is not defined in environment variables');
 }
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,25 +41,14 @@ export async function POST(request: NextRequest) {
       Generate only the message without any additional formatting or context.
     `;
 
-    const completion = await groq.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content: "You are an expert at writing personalized, engaging outreach messages that start meaningful business conversations."
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      model: "llama-3.2-90b-text-preview",  // Changed to Llama
-      temperature: 0.7,
-      max_tokens: 200,
-      top_p: 1,
-      stream: false,
-    });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    
+    const systemPrompt = "You are an expert at writing personalized, engaging outreach messages that start meaningful business conversations.";
+    const fullPrompt = `${systemPrompt}\n\n${prompt}`;
 
-    const message = completion.choices[0]?.message?.content?.trim();
+    const result = await model.generateContent(fullPrompt);
+    const response = await result.response;
+    const message = response.text().trim();
 
     if (!message) {
       throw new Error('No message generated');

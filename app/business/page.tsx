@@ -1,5 +1,4 @@
-import { db } from "@/db"
-import { customers } from "@/db/schema"
+import { db } from "@/db/supabase-direct"
 import {
   Table,
   TableBody,
@@ -11,12 +10,10 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import BusinessMetricsChart from "@/components/business-metrics-chart"
 import BusinessPredictionChart from "@/components/business-prediction-chart"
-import { Groq } from "groq-sdk"
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import { unstable_noStore as noStore } from 'next/cache';
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-})
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 
 interface BusinessMetrics {
   totalExpenses: number;
@@ -30,35 +27,30 @@ export const revalidate = 0
 
 async function getBusinessData() {
   noStore();
-  const data = await db.select().from(customers).execute()
+  const data = await db.getCustomers()
   return data
 }
 
 async function getPredictions(metrics: BusinessMetrics) {
   try {
-    const completion = await groq.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content: "You are a business analytics expert that provides growth predictions based on historical data. Always return predictions as arrays of 6 numbers."
-        },
-        {
-          role: "user",
-          content: `Based on these business metrics, predict the next 6 months of growth rates (as percentages), expenses (as absolute values), and satisfaction scores (1-10).
-          Return only JSON data in this format: 
-          {
-            "growthRates": [6 numbers representing monthly growth %],
-            "expenses": [6 numbers representing monthly expenses],
-            "satisfaction": [6 numbers between 1-10]
-          }
-          Current metrics: ${JSON.stringify(metrics)}`
-        }
-      ],
-      model: "llama3-70b-8192",
-      temperature: 0.2,
-    })
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    
+    const prompt = `You are a business analytics expert that provides growth predictions based on historical data. Always return predictions as arrays of 6 numbers.
 
-    const prediction = JSON.parse(completion.choices[0]?.message?.content || "{}")
+Based on these business metrics, predict the next 6 months of growth rates (as percentages), expenses (as absolute values), and satisfaction scores (1-10).
+Return only JSON data in this format: 
+{
+  "growthRates": [6 numbers representing monthly growth %],
+  "expenses": [6 numbers representing monthly expenses],
+  "satisfaction": [6 numbers between 1-10]
+}
+Current metrics: ${JSON.stringify(metrics)}`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const content = response.text();
+    
+    const prediction = JSON.parse(content || "{}")
     
     // Validate and provide fallback values if needed
     const fallbackPrediction = {
@@ -83,11 +75,20 @@ async function getPredictions(metrics: BusinessMetrics) {
   }
 }
 
+interface BusinessDataItem {
+  id: string
+  name: string
+  businessExpenses?: number
+  businessGrowthRate?: number
+  customerSatisfactionScore?: number
+  averageOrderValue?: number
+}
+
 export default async function BusinessPage() {
   const businessData = await getBusinessData()
 
   // Calculate averages and totals
-  const metrics = businessData.reduce((acc, curr) => ({
+  const metrics = businessData.reduce((acc: Record<string, number>, curr: BusinessDataItem) => ({
     totalExpenses: acc.totalExpenses + (curr.businessExpenses || 0),
     avgGrowthRate: acc.avgGrowthRate + (curr.businessGrowthRate || 0),
     avgOrderValue: acc.avgOrderValue + (curr.averageOrderValue || 0),
@@ -177,7 +178,7 @@ export default async function BusinessPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {businessData.map((item) => (
+              {businessData.map((item: BusinessDataItem) => (
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">{item.name}</TableCell>
                   <TableCell>₹{item.businessExpenses?.toLocaleString()}</TableCell>

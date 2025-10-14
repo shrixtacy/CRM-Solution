@@ -2,77 +2,86 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
 
 export type Lead = {
   id: string;
-  username: string;
   name: string;
-  bio?: string;
-  tweet: string;
-  followerCount: number;
-  topics: string[];
+  email?: string;
+  phone?: string;
+  company?: string;
+  source: string;
+  status: string;
+  priority: string;
+  notes?: string;
+  created_at: Date;
+  updated_at: Date;
 };
 
 export const columns: ColumnDef<Lead>[] = [
   {
     accessorKey: "name",
     header: "Name",
+  },
+  {
+    accessorKey: "email",
+    header: "Email",
+  },
+  {
+    accessorKey: "phone",
+    header: "Phone",
+  },
+  {
+    accessorKey: "company",
+    header: "Company",
+  },
+  {
+    accessorKey: "source",
+    header: "Source",
     cell: ({ row }) => {
-      const username = row.original.username;
+      const source = row.getValue("source") as string;
       return (
-        <div className="flex flex-col">
-          <span className="font-medium">{row.getValue("name")}</span>
-          <a
-            href={`https://twitter.com/${username}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1"
-          >
-            <X className="h-3 w-3" />
-            @{username}
-          </a>
-        </div>
+        <Badge variant="secondary">
+          {source}
+        </Badge>
       );
     },
   },
   {
-    accessorKey: "bio",
-    header: "Bio",
-    cell: ({ row }) => (
-      <div className="max-w-[300px] truncate" title={row.getValue("bio")}>
-        {row.getValue("bio")}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "tweet",
-    header: "Latest Tweet",
-    cell: ({ row }) => (
-      <div className="max-w-[300px] truncate" title={row.getValue("tweet")}>
-        {row.getValue("tweet")}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "followerCount",
-    header: "Followers",
-    cell: ({ row }) => (
-      <span>{Number(row.getValue("followerCount")).toLocaleString()}</span>
-    ),
-  },
-  {
-    accessorKey: "topics",
-    header: "Matching Topics",
+    accessorKey: "status",
+    header: "Status",
     cell: ({ row }) => {
-      const topics = row.getValue("topics") as string[];
+      const status = row.getValue("status") as string;
       return (
-        <div className="flex flex-wrap gap-1">
-          {topics.map((topic) => (
-            <Badge key={topic} variant="outline" className="text-xs">
-              {topic}
-            </Badge>
-          ))}
+        <Badge 
+          variant={status === "converted" ? "default" : "secondary"}
+        >
+          {status}
+        </Badge>
+      );
+    },
+  },
+  {
+    accessorKey: "priority",
+    header: "Priority",
+    cell: ({ row }) => {
+      const priority = row.getValue("priority") as string;
+      return (
+        <Badge 
+          variant={priority === "high" ? "destructive" : priority === "medium" ? "default" : "secondary"}
+        >
+          {priority}
+        </Badge>
+      );
+    },
+  },
+  {
+    accessorKey: "notes",
+    header: "Notes",
+    cell: ({ row }) => {
+      const notes = row.getValue("notes") as string;
+      return (
+        <div className="max-w-[200px] truncate">
+          {notes || "No notes"}
         </div>
       );
     },

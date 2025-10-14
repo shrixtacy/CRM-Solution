@@ -1,25 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Groq } from 'groq-sdk';
-import { db } from '@/db';
-import { customers } from '@/db/schema';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { db } from '@/db/supabase-direct';
 import { Resend } from 'resend';
 import { EmailTemplate } from '@/components/email-template';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: NextRequest) {
   try {
     const { product, region, previewOnly } = await request.json();
-    const allCustomers = await db.select().from(customers).execute();
+    const allCustomers = await db.getCustomers();
     console.log('All customers:', allCustomers.length);
     
-    const filteredCustomers = allCustomers.filter(customer => 
+    const filteredCustomers = allCustomers.filter((customer: { state?: string }) => 
       customer.state?.toLowerCase() === region.toLowerCase()
     );
     console.log('Filtered customers:', filteredCustomers.length);
@@ -31,22 +28,16 @@ export async function POST(request: NextRequest) {
       }, { status: 404 });
     }
 
-    // Use Groq LLM to generate email content
-    const completion = await groq.chat.completions.create({
-      messages: [
-        { 
-          role: "system", 
-          content: "You are a marketing expert that crafts compelling, personalized email content. Keep the tone professional but friendly." 
-        },
-        { 
-          role: "user", 
-          content: `Create a marketing email for ${product} targeting customers in ${region}. Include a compelling subject line and a clear call to action.` 
-        }
-      ],
-      model: "llama-3.2-90b-text-preview",
-    });
+    // Use Gemini LLM to generate email content
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    
+    const prompt = `You are a marketing expert that crafts compelling, personalized email content. Keep the tone professional but friendly.
 
-    const emailContent = completion.choices[0]?.message?.content;
+Create a marketing email for ${product} targeting customers in ${region}. Include a compelling subject line and a clear call to action.`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const emailContent = response.text();
 
     if (!emailContent) {
       return NextResponse.json({ 
@@ -62,16 +53,17 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log('Starting to send emails to:', filteredCustomers.map(c => c.email));
+    console.log('Starting to send emails to:', filteredCustomers.map((c: { email: string }) => c.email));
 
     // Send emails individually to each customer
-    const emailPromises = filteredCustomers.map(async (customer) => {
+    const emailPromises = filteredCustomers.map(async (customer: { email: string; name?: string }) => {
       try {
         console.log(`Attempting to send email to ${customer.email}`);
+        // For testing: send to your email instead of customer email
         const result = await resend.emails.send({
           from: 'Vyapaar <onboarding@resend.dev>',
-          to: [customer.email],
-          subject: `Special Offer on ${product} for ${region} Customers`,
+          to: ['shriyanshdash12@gmail.com'], // Your email for testing
+          subject: `[TEST] Special Offer on ${product} for ${region} Customers - ${customer.name}`,
           react: EmailTemplate({ 
             firstName: customer.name || 'Valued Customer',
             content: emailContent 

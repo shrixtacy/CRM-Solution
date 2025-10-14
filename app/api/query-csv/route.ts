@@ -1,32 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Groq } from 'groq-sdk'
-import { db } from '@/db'
-import { customers } from '@/db/schema'
+import { GoogleGenerativeAI } from '@google/generative-ai'
+import { db } from '@/db/supabase-direct'
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-})
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 
 export async function POST(request: NextRequest) {
   const { query } = await request.json()
 
-  if (!process.env.GROQ_API_KEY) {
-    return NextResponse.json({ error: 'GROQ_API_KEY is not set' }, { status: 500 })
+  if (!process.env.GEMINI_API_KEY) {
+    return NextResponse.json({ error: 'GEMINI_API_KEY is not set' }, { status: 500 })
   }
 
   try {
-    const allCustomers = await db.select().from(customers).execute()
+    const allCustomers = await db.getCustomers()
     const customerData = JSON.stringify(allCustomers, null, 2)
 
-    const completion = await groq.chat.completions.create({
-      messages: [
-        { role: "system", content: "You are a helpful assistant that answers questions about customer data." },
-        { role: "user", content: `Here is the customer data:\n\n${customerData}\n\nQuestion: ${query}` }
-      ],
-      model: "llama-3.2-90b-text-preview",
-    })
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    
+    const prompt = `You are a helpful assistant that answers questions about customer data.
 
-    const reply = completion.choices[0]?.message?.content
+Here is the customer data:
+
+${customerData}
+
+Question: ${query}`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const reply = response.text();
 
     return NextResponse.json({ reply })
   } catch (error) {
