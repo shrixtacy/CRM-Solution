@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { Providers } from "./providers"
 
 export const metadata: Metadata = {
-  title: "Vyapaar",
+  title: "SynCRM",
   description: "The best AI integrated CRM for your business.",
 };
 

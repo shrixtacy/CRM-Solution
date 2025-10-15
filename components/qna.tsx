@@ -5,15 +5,15 @@ export const QnA: React.FC = () => {
   return (
     <Accordion type="single" collapsible className="w-11/12 max-w-4xl mx-auto">
       <AccordionItem value="item-1">
-        <AccordionTrigger>What is Vyapaar?</AccordionTrigger>
+        <AccordionTrigger>What is SynCRM?</AccordionTrigger>
         <AccordionContent>
-          Vyapaar is a AI integrated CRM that helps you manage your customers with ease.
+          SynCRM is a AI integrated CRM that helps you manage your customers with ease.
         </AccordionContent>
       </AccordionItem>
       <AccordionItem value="item-2">
-        <AccordionTrigger>How does Vyapaar help?</AccordionTrigger>
+        <AccordionTrigger>How does SynCRM help?</AccordionTrigger>
         <AccordionContent>
-          Vyapaar provides a pre-configured environment with essential tools and
+          SynCRM provides a pre-configured environment with essential tools and
           components, saving you time in customer management and allowing you to focus
           on building your unique features.
         </AccordionContent>

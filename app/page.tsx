@@ -28,7 +28,7 @@ export default function Home() {
           )}
         >
           <AnimatedShinyText className="inline-flex items-center justify-center px-3 py-0.5 transition ease-out hover:text-neutral-600 hover:duration-300 hover:dark:text-neutral-400">
-            <span>✨ Introducing Vyapaar</span>
+            <span>✨ Introducing SynCRM</span>
             <ArrowRightIcon className="ml-1 size-2.5 transition-transform duration-300 ease-in-out group-hover:translate-x-0.5" />
           </AnimatedShinyText>
         </div>
@@ -53,7 +53,7 @@ export default function Home() {
           <div className="absolute inset-0 -inset-x-20 h-[150%] bg-gradient-to-t from-black via-black to-transparent opacity-100 z-30"></div>
           <div className="relative z-20 overflow-hidden rounded-lg">
             <BorderBeam size={250} duration={12} delay={9} className="absolute inset-0 z-20" />
-            <Safari url="vyapaar.com" className="w-full h-full relative z-10" src="/safari.jpg" />
+            <Safari url="syncrm.com" className="w-full h-full relative z-10" src="/safari.jpg" />
           </div>
           <div className="flex flex-col justify-center items-center relative z-40">
             <p className="text-sm text-gray-200 mb-2">Trusted by alotta people for handling their customers.</p>
