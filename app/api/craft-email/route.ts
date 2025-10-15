@@ -61,7 +61,7 @@ Create a marketing email for ${product} targeting customers in ${region}. Includ
         console.log(`Attempting to send email to ${customer.email}`);
         // For testing: send to your email instead of customer email
         const result = await resend.emails.send({
-          from: 'Vyapaar <onboarding@resend.dev>',
+          from: 'SynCRM <onboarding@resend.dev>',
           to: ['shriyanshdash12@gmail.com'], // Your email for testing
           subject: `[TEST] Special Offer on ${product} for ${region} Customers - ${customer.name}`,
           react: EmailTemplate({ 
